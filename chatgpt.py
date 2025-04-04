@@ -1,10 +1,6 @@
 import openai
 import json
-import os
-import time 
-import random
 import asyncio
-import time
 import openai
 import httpx
 with open("config.json", "r+", encoding = "utf-8") as config_open:

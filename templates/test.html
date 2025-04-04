@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GeoGebra - Save JSON to File</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"/>
+  <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="ggb-element"></div>
+  <!-- <button onclick="sendJSONToServer()">Get GeoGebra JSON</button>  Удаляем кнопку -->
+
+  <script>
+    var ggbApplet;
+
+    var params = {
+      "appName": "geometry",
+      "width": 800,
+      "height": 600,
+      "showToolBar": true,
+      "showAlgebraInput": true,
+      "showMenuBar": true,
+      "appletOnLoad": function(api) {
+        api.evalCommand("{{ initial_command }}"); // Use Jinja to insert the command
+
+        // Вызываем sendJSONToServer() после загрузки апплета GeoGebra
+        sendJSONToServer();
+      }
+    };
+
+    window.addEventListener("load", function() {
+      ggbApplet = new GGBApplet(params, true);
+      ggbApplet.inject('ggb-element');
+
+      //sendJSONToServer(); //Убираем отсюда, переносим в appletOnLoad
+    });
+
+    async function sendJSONToServer() {
+      if (ggbApplet) {
+        var jsonData = ggbApplet.getFileJSON();
+        console.log("JSON Data:", jsonData);
+        try {
+          
+          const response = await fetch('/get_geogebra_json', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+          });
+
+          const data = await response.json();
+          alert(data.message); // Show success or error message
+        } catch (error) {
+          console.error("Error sending JSON:", error);
+          alert("Error sending JSON: " + error); // Show error message
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>
