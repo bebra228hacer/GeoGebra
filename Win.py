@@ -100,7 +100,7 @@ class Toplevel1:
 
         self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
         top.configure(menu = self.menubar)
-        self.menubar.add_command(compound='left', label='Справка', command = lambda:(subprocess.Popen(["notepad.exe", "readme.md"])))
+        self.menubar.add_command(compound='left', label='Справка', command = lambda:(subprocess.Popen(["notepad.exe", "README.md"])))
         self.menubar.add_command(compound='left', label='Перезагрузить', command = lambda:(messagebox.showerror("Ошибка", "Декоративная кнопка")))
         self.sub_menu = tk.Menu(self.menubar, borderwidth=1, foreground='#000000',tearoff=0)
         self.menubar.add_cascade(compound='left', label='Файлы',menu=self.sub_menu, )
