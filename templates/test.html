@@ -15,22 +15,21 @@
 <body>
 
   <div id="ggb-element"></div>
-  <!-- <button onclick="sendJSONToServer()">Get GeoGebra JSON</button>  Удаляем кнопку -->
-
   <script>
     var ggbApplet;
 
     var params = {
-      "appName": "geometry",
-      "width": 800,
-      "height": 600,
-      "showToolBar": true,
-      "showAlgebraInput": true,
-      "showMenuBar": true,
+      "prerelease":false,
+      "width":2200,
+      "height":1700,
+      "borderColor":null,
+      "showResetIcon":false,
+      "capturingThreshold":null,
+      "errorDialogsActive":true,
+      "useBrowserForJS":true,
       "appletOnLoad": function(api) {
-        api.evalCommand("{{ initial_command }}"); // Use Jinja to insert the command
+        api.evalCommand("{{ initial_command }}"); 
 
-        // Вызываем sendJSONToServer() после загрузки апплета GeoGebra
         sendJSONToServer();
       }
     };
@@ -39,7 +38,6 @@
       ggbApplet = new GGBApplet(params, true);
       ggbApplet.inject('ggb-element');
 
-      //sendJSONToServer(); //Убираем отсюда, переносим в appletOnLoad
     });
 
     async function sendJSONToServer() {
@@ -57,10 +55,8 @@
           });
 
           const data = await response.json();
-          alert(data.message); // Show success or error message
         } catch (error) {
           console.error("Error sending JSON:", error);
-          alert("Error sending JSON: " + error); // Show error message
         }
       }
     }

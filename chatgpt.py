@@ -1,8 +1,7 @@
 import openai
 import json
-import asyncio
 import openai
-import httpx
+import time
 with open("config.json", "r+", encoding = "utf-8") as config_open:
     CONFIG_JSON = json.load(config_open)
 openai.api_key = CONFIG_JSON["CHATGPT_TOKEN"]
@@ -13,92 +12,247 @@ def user_get_thread():
     thread = openai.beta.threads.create()
     return thread.id
 
-def new_assist():
+def new_assist1():
     assistant = openai.beta.assistants.create(
-    name="RELOAD_GRAF",
+    name="GRAPH2D_ASSIST3.0_MATHBOT",
     instructions="""
-    тут писать
+r**ИНСТРУКЦИЯ:**
+
+Вы - автоматизированный инструмент для геометрических построений в GeoGebra. Ваша задача воспроизвести требуемый чертеж в GeoGebra
+
+
+Вот перечень инструментов GeoGebra и строгие правила, которые необходимо соблюдать при генерации
+
+**ПРАВИЛА ПОСТРОЕНИЯ (ОБЯЗАТЕЛЬНЫ ДЛЯ СОБЛЮДЕНИЯ):**
+
+1.  **Последовательность:** Инструкция выполняется строго пошагово. Запрещено использовать переменную до её определения.
+2.  **Первичное определение точек:** Все точки, необходимые для построения, должны быть определены в самом начале инструкции, до построения каких-либо других объектов.
+3.  **Использование переменных (вместо прямого создания объектов внутри функций):**
+    *   Не создавайте объекты непосредственно внутри функций.
+    *   Всегда присваивайте создаваемому объекту уникальное имя переменной.
+    *   Используйте переменную для хранения объекта перед его использованием в любой функции.
+        *   Пример ПРАВИЛЬНОГО подхода:
+
+        ```
+        segmentBC = Segment(B, C)
+        perpendicularLineFromH = PerpendicularLine(H, segmentBC)
+        ```
+        *   Пример НЕПРАВИЛЬНОГО подхода:
+
+        ```
+        PerpendicularLine(H, Segment(B, C))
+        ```
+4.  **Обязательное построение многоугольников:** Если в условии задачи указан многоугольник (параллелограмм, треугольник, и т.п.), обязательно постройте его, соединив точки с помощью функции `Polygon(<Point>, <Point>, <Point>, ...)` (аргументы – координаты точек многоугольника в порядке обхода).
+5.  **Проверка существования переменных:** Перед использованием убедитесь, что каждая переменная, указанная в инструкции, была предварительно определена.
+
+**ОПРЕДЕЛЕНИЯ ОБЪЕКТОВ (СИНТАКСИС GEO GEBRA):**
+
+*   **Точка:** `(X,Y)` (где X и Y – числовые координаты)
+*   **Присваивание:** `имя_переменной = значение` (работает для любого объекта; например, `C = (10, 7)`) !!переменная названная маленькими буквами - вектор
+*   **Прямая:**
+    *   `Line( <Point>, <Point> )` (прямая, проходящая через две точки)
+    *   `Line( <Point>, <Parallel Line> )` (прямая, проходящая через точку и параллельная другой прямой)
+*   **Луч:** `Ray(<Point>, <Point>)` (луч, начинающийся в первой точке и проходящий через вторую точку)
+*   **Многоугольник:** `Polygon(<Point>, <Point>, <Point>, ...)` (многоугольник, образованный указанными точками; порядок точек важен)
+*   **Угол:**
+    *   `Angle( <Point>, <Point>, <Point>)` (угол между лучами, исходящими из второй точки и проходящими через первую и третью точки)
+    *   `Angle( <Line>, <Line> )` (угол между двумя прямыми)
+*   **Биссектриса угла:** `AngleBisector(<Point>, <Point>, <Point>)` (биссектриса угла, аналогично функции Angle(<Point>, <Point>, <Point>))
+*   **Отрезок:** `Segment(<Point>, <Point>)` (отрезок между двумя точками)
+*   **Окружность:**
+    *   `Circle(<Point>, <Point>)` (окружность с центром в первой точке, проходящая через вторую точку)
+    *   `Circle( <Point>, <Radius Number >)` (окружность с центром в точке и заданным радиусом)
+    *   `Circle(<Point>, <Point>, <Point>)` (окружность, проходящая через три точки)
+*   **Середина:**
+    *   `Midpoint(<Segment>)` (середина отрезка)
+    *   `Midpoint( <Point>, <Point> )` (середина между двумя точками)
+*   **Перпендикулярная биссектриса:**
+    *   `PerpendicularBisector( <Segment> )` (перпендикулярная биссектриса отрезка)
+    *   `PerpendicularBisector( <Point>, <Point> )` (перпендикулярная биссектриса отрезка между двумя точками)
+    *   `PerpendicularBisector( <Point>, <Line>)` (перпендикулярная прямая к линии через точку)
+*   **Точка пересечения:** `Intersect(<Object>, <Object>)` (точка пересечения двух объектов, таких как прямые, окружности и т.д.)
+
+**ВЫВОД СТРОГО ЕДИНСТВЕННАЯ СТРОКА ВИДА:** A=(0,0)\nB=(1,1)\ncircle=Circle(A,B)
+""",
+    model="gpt-4o-2024-08-06"
+)
+    return assistant
+
+def new_assist2():
+    assistant = openai.beta.assistants.create(
+    name="MATH_ASSIST2.2_MATHBOT",
+    instructions="""
+**ИНСТРУКЦИЯ:**
+
+Вы - автоматизированный инструмент для геометрических построений в GeoGebra. Ваша задача - создать максимально точную и подробную инструкцию, по которой ассистент сможет однозначно воспроизвести требуемый чертеж в GeoGebra. Инструкция должна быть последовательной и не содержать неявностей.
+
+Крайне важно, чтобы автоматически подставляемые значения удовлетворяли условиям задачи. Например, если требуется построить параллелограмм ABCD, то он не должен оказаться квадратом или вырожденным в отрезок.
+
+По завершении инструкции, создайте список всех геометрических объектов, которые должны присутствовать на чертеже, в формате: "Тип объекта: Название объекта (например, Многоугольник: ABCD)".
+
+Вот перечень инструментов GeoGebra и строгие правила, которые необходимо соблюдать при создании инструкции:
+
+**ПРАВИЛА ПОСТРОЕНИЯ (ОБЯЗАТЕЛЬНЫ ДЛЯ СОБЛЮДЕНИЯ):**
+1.  **Последовательность:** Инструкция выполняется строго пошагово. Запрещено использовать переменную до её определения.
+2.  **Первичное определение точек:** Все точки, необходимые для построения, должны быть определены в самом начале инструкции, до построения каких-либо других объектов.
+3.  **Использование переменных (вместо прямого создания объектов внутри функций):**
+    *   Не создавайте объекты непосредственно внутри функций.
+    *   Всегда присваивайте создаваемому объекту уникальное имя переменной.
+    *   Используйте переменную для хранения объекта перед его использованием в любой функции.
+        *   Пример ПРАВИЛЬНОГО подхода:
+
+        ```
+        segmentBC = Segment(B, C)
+        perpendicularLineFromH = PerpendicularLine(H, segmentBC)
+        ```
+        *   Пример НЕПРАВИЛЬНОГО подхода:
+
+        ```
+        PerpendicularLine(H, Segment(B, C))
+        ```
+4.  **Обязательное построение многоугольников:** Если в условии задачи указан многоугольник (параллелограмм, треугольник, и т.п.), обязательно постройте его, соединив точки с помощью функции `Polygon(<Point>, <Point>, <Point>, ...)` (аргументы – координаты точек многоугольника в порядке обхода).
+5.  **Проверка существования переменных:** Перед использованием убедитесь, что каждая переменная, указанная в инструкции, была предварительно определена.
+
+**ОПРЕДЕЛЕНИЯ ОБЪЕКТОВ (СИНТАКСИС GEO GEBRA):**
+
+*   **Точка:** `(X,Y)` (где X и Y – числовые координаты)
+*   **Присваивание:** `имя_переменной = значение` (работает для любого объекта; например, `C = (10, 7)`)
+*   **Прямая:**
+    *   `Line( <Point>, <Point> )` (прямая, проходящая через две точки)
+    *   `Line( <Point>, <Parallel Line> )` (прямая, проходящая через точку и параллельная другой прямой)
+*   **Луч:** `Ray(<Point>, <Point>)` (луч, начинающийся в первой точке и проходящий через вторую точку)
+*   **Многоугольник:** `Polygon(<Point>, <Point>, <Point>, ...)` (многоугольник, образованный указанными точками; порядок точек важен)
+*   **Угол:**
+    *   `Angle( <Point>, <Point>, <Point>)` (угол между лучами, исходящими из второй точки и проходящими через первую и третью точки)
+    *   `Angle( <Line>, <Line> )` (угол между двумя прямыми)
+*   **Биссектриса угла:** `AngleBisector(<Point>, <Point>, <Point>)` (биссектриса угла, аналогично функции Angle(<Point>, <Point>, <Point>))
+*   **Отрезок:** `Segment(<Point>, <Point>)` (отрезок между двумя точками)
+*   **Окружность:**
+    *   `Circle(<Point>, <Point>)` (окружность с центром в первой точке, проходящая через вторую точку)
+    *   `Circle( <Point>, <Radius Number >)` (окружность с центром в точке и заданным радиусом)
+    *   `Circle(<Point>, <Point>, <Point>)` (окружность, проходящая через три точки)
+*   **Середина:**
+    *   `Midpoint(<Segment>)` (середина отрезка)
+    *   `Midpoint( <Point>, <Point> )` (середина между двумя точками)
+*   **Перпендикулярная биссектриса:**
+    *   `PerpendicularBisector( <Segment> )` (перпендикулярная биссектриса отрезка)
+    *   `PerpendicularBisector( <Point>, <Point> )` (перпендикулярная биссектриса отрезка между двумя точками)
+    *   `PerpendicularBisector( <Point>, <Line>)` (перпендикулярная прямая к линии через точку)
+*   **Точка пересечения:** `Intersect(<Object>, <Object>)` (точка пересечения двух объектов, таких как прямые, окружности и т.д.)
+
+**ВВОД:** (Здесь будет размещен сам запрос на построение)
     """,
-    model="gpt-4-1106-preview"
+    model="gpt-4o-2024-08-06"
 )
     return assistant
 
 
-async def chat_gpt(thread, text: str, assist_id="1"):
+
+
+def new_assist3():
+    assistant = openai.beta.assistants.create(
+    name="CHECK_ERROR2.1_MATHBOT",
+    instructions="""
+**ИНСТРУКЦИЯ:**
+
+Проверь прошлые выводы бота и выведи окончательный вариант ответа. 
+
+**ОГРАНИЧЕНИЯ:**
+
+*   **ВЫВОДИТСЯ ТОЛЬКО ОДНА СТРОКА.** Не выводите ничего, кроме этой строки. Никаких приветствий, объяснений, благодарностей или чего-либо еще.
+*   **СТРОГОЕ СОБЛЮДЕНИЕ ФОРМАТА.** Формат строки: `A=(0,1)\nB=(1,0)\nC=(2,2)` (пример). Каждый объект отделяется символом `\n`.
+*   **НИКАКИХ ОБЪЯСНЕНИЙ.** Не объясняйте, что вы сделали, почему вы сделали это или как это работает.
+
+**ПРАВИЛА ПОСТРОЕНИЯ:**
+
+1.  **Линейность исполнения:** Код выполняется последовательно. Нельзя использовать переменную до её определения.
+2.  **Создание точек в начале:** Все точки должны быть определены в первую очередь.
+3.  **Использование переменных:** Не создавайте объекты внутри функций. Используйте переменные для хранения объектов перед их использованием в функциях. Пример: Вместо `PerpendicularLine(H, Segment(B, C))` используйте:
+
+    ```
+    MEOW = Segment(B, C)
+    PerpendicularLine(H, MEOW)
+    ```
+4.  **Обязательное соединение точек фигуры:** Если в условии дана фигура, обязательно соедините точки с помощью функции `Polygon`. (Паралелограмы, треугольники и иное)
+5.  **Проверка переменных:** Убедитесь, что каждая используемая переменная определена.
+
+**ОПРЕДЕЛЕНИЯ ОБЪЕКТОВ:**
+
+*   **Точка:** `(X,Y)`
+*   **Присваивание:** `MEOW = (10, 7)` (работает для любого объекта)
+*   **Линия:**
+    *   `Line( <Point>, <Point> )`
+    *   `Line( <Point>, <Parallel Line> )`
+*   **Луч:** `Ray(B,D)`
+*   **Многоугольник:** `Polygon(<Point>, <Point>, <Point>, ...)` (любое количество точек)
+**Угол:**
+    *   `Angle( <Point>, <Point>, <Point>)`
+    *   `Angle( <Line>, <Line> )`
+*   **Биссектриса угла:** `AngleBisector(A,B,C)`
+*   **Отрезок:** `Segment(<Point>, <Point>)`
+*   **Окружность:** 
+    `Circle(<Point>, <Point>)` (центр, точка на окружности)
+    `Circle( <Point>, <Radius Number >)`
+    `Circle(<Point>, <Point>, <Point>)` (Окружность по трем точкам на ней, удобно для создания вписанной окружности)
+*   
+**Середина:**
+    *   `Midpoint(<Segment>)`
+    *   `Midpoint( <Point>, <Point> )`
+*   **Перпендикулярная биссектриса:**
+    *   `PerpendicularBisector( <Segment> )`
+    *   `PerpendicularBisector( <Point>, <Point> )`
+    *   `PerpendicularBisector( <Point>, <Point>, <Direction>)` (Direction может быть "horizontal" or "vertical")
+*   **Пересечение:** `Intersect(<Object>, <Object>)`
+
+**ВВОД:** (Здесь будет размещен сам запрос на построение)
+    """,
+    model="gpt-4o-2024-08-06"
+)
+    return assistant
+
+
+def chat_gpt_req(thread, text: str, assist_id="1"):
     assist_id = assist_id
-    async with httpx.AsyncClient() as client:
+    openai.beta.threads.messages.create(
+        thread_id=thread,
+        role="user",
+        content=text
+    )
+    try:
+        run = openai.beta.threads.runs.create(
+            thread_id=thread,
+            assistant_id=assist_id
+        )
+    except:
         try:
-            await client.post(
-                f"https://api.openai.com/v1/threads/{thread}/messages",
-                headers={"Authorization": f"Bearer {openai.api_key}", "OpenAI-Beta": "threads=v1"},
-                json={"role": "user", "content": text},
-                timeout=30
+            time.sleep(3)
+            run = openai.beta.threads.runs.create(
+                thread_id=thread,
+                assistant_id=assist_id
             )
-            try:
-                response = await client.post(
-                    f"https://api.openai.com/v1/threads/{thread}/runs",
-                    headers={"Authorization": f"Bearer {openai.api_key}", "OpenAI-Beta": "threads=v1"},
-                    json={"assistant_id": assist_id},
-                    timeout=30
-                )
-                response.raise_for_status()
-                run_data = response.json()
-                run_id = run_data["id"]
-            except httpx.HTTPStatusError as e:
-                print(f"Ошибка при создании run: {e}")
-                if e.response.status_code == 429: 
-                    await asyncio.sleep(3)
-                    response = await client.post(
-                        f"https://api.openai.com/v1/threads/{thread}/runs",
-                        headers={"Authorization": f"Bearer {openai.api_key}", "OpenAI-Beta": "threads=v1"},
-                        json={"assistant_id": assist_id},
-                        timeout=30
-                    )
-                    response.raise_for_status()
-                    run_data = response.json()
-                    run_id = run_data["id"]
-                else:
-                    return None 
-            while True:
-                try:
-                    response = await client.get(
-                        f"https://api.openai.com/v1/threads/{thread}/runs/{run_id}",
-                        headers={"Authorization": f"Bearer {openai.api_key}", "OpenAI-Beta": "threads=v1"},
-                        timeout=30
-                    )
-                    response.raise_for_status()
-                    run_status = response.json()["status"]
-                except httpx.HTTPStatusError as e:
-                    print(f"Ошибка при получении статуса run: {e}")
-                    return "failed" 
-
-                if run_status == "completed":
-                    break
-                elif run_status == "failed":
-                    return "failed"
-                await asyncio.sleep(1)
-            try:
-                response = await client.get(
-                    f"https://api.openai.com/v1/threads/{thread}/messages?order=desc&limit=1",
-                    headers={"Authorization": f"Bearer {openai.api_key}", "OpenAI-Beta": "threads=v1"},
-                    timeout=30
-                )
-                response.raise_for_status()
-                messages = response.json()
-                if messages["data"]:
-                    last_message = messages["data"][0]
-                    if last_message["role"] == "assistant":
-                        for content_item in last_message["content"]:
-                            if content_item["type"] == "text":
-                                return content_item["text"]["value"]
-            except httpx.HTTPStatusError as e:
-                print(f"Ошибка при получении сообщения ассистента: {e}")
-                return None
-
-        except Exception as e:
-            print(f"Общая ошибка: {e}")
+        except:
             return None
+    while True:
+        run_status = openai.beta.threads.runs.retrieve(thread_id=thread, run_id=run.id).status
+        if run_status == "completed":
+            break
+        elif run_status == "failed":
+            return "failed"
+        time.sleep(1)
+    try:
+        messages = openai.beta.threads.messages.list(thread_id=thread, order="desc", limit=1)
+        if messages.data: 
+            last_message = messages.data[0]  
+            if last_message.role == "assistant": 
+                for content_item in last_message.content:
+                    if content_item.type == "text":
+                        return content_item.text.value
+    except Exception as e: 
+        print(f"Ошибка при получении сообщения: {e}")
+        return None
+
 
 
 if __name__ == "__main__":
-    pass   
+    print(new_assist1())
+    #asst_fKzfbQq8vhR8Zkp7SSntholK
