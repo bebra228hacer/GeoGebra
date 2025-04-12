@@ -100,7 +100,7 @@ class Toplevel1:
 
         self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
         top.configure(menu = self.menubar)
-        self.menubar.add_command(compound='left', label='Справка', command = lambda:(subprocess.Popen(["notepad.exe", "README.md"])))
+        self.menubar.add_command(compound='left', label='Справка', command = lambda:(subprocess.Popen(["notepad.exe", "readme.md"])))
         self.menubar.add_command(compound='left', label='Перезагрузить', command = lambda:(messagebox.showerror("Ошибка", "Декоративная кнопка")))
         self.sub_menu = tk.Menu(self.menubar, borderwidth=1, foreground='#000000',tearoff=0)
         self.menubar.add_cascade(compound='left', label='Файлы',menu=self.sub_menu, )
@@ -131,8 +131,10 @@ class Toplevel1:
             self.Text2.insert(tk.END, "Ваш запрос отправлен, это может занять около 10 секунд\n")
             command_to_server = "MEOW = (0, 0)"
             command_to_server = message_to_chat_gpt(self.Text1.get("1.0", tk.END), thread)
+            self.Text2.insert(tk.END, "Запрос к ChatGPT успешно отправлен\n")
             print(command_to_server)
             threading.Thread(target=server, args=(command_to_server,), daemon=True).start()
+            self.Text2.insert(tk.END, "Файл сгенерирован!\n")
 
             
             
