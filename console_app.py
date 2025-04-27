@@ -4,17 +4,19 @@ import pyserver
 import webbrowser
 from flask import render_template
 import os
+import datetime
 with open("config.json") as cfile:
     config_file = json.load(cfile)
 url = "http://127.0.0.1:5000" 
 
 
 def server(initial_command = r"MEOW = (0,0)"):
-    app = pyserver.create_app("meow.ggb")
+    now = datetime.datetime.now()
+    app = pyserver.create_app(f"saved_file/GeoGebra_file_{now.strftime("%Y%m%d_%H%M%S")}.ggb")
     @app.route('/')
     def index(initial_command = initial_command):    
         return render_template('test.html', initial_command=initial_command) 
-    app.run(debug=True, port=5000, use_reloader=False) 
+    app.run(debug=False, use_reloader=False, port=5000)
 
 def main_input():
     print("Введите из чего требуется создать чертеж:")
