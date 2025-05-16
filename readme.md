@@ -12,14 +12,15 @@
 Для корректной работы не забудьте установить requirements.txt и Python 3.12+
 Приложение создавалось для платформы Windows
 
->Файл config.json имеет содержание вида:
+Файл config.json имеет содержание вида:
 
-
-> {                                                             
->    "CHATGPT_TOKEN":"",     Ваш openAi токен ("sk-proj-.....")
->    "GRAPH2D_ASSIST":"",    Ассистент единоразово получается функцией new_assist1() в chatgpt.py
->    "MATH_ASSIST":""      Ассистент единоразово получается функцией new_assist2() в chatgpt.py
->}
+```
+{                                                             
+   "CHATGPT_TOKEN":"",     Ваш openAi токен ("sk-proj-.....")
+   "GRAPH2D_ASSIST":"",    Ассистент единоразово получается функцией new_assist1() в chatgpt.py
+   "MATH_ASSIST":""      Ассистент единоразово получается функцией new_assist2() в chatgpt.py
+}
+```
 
 
 
