@@ -41,7 +41,7 @@ if __name__ == '__main__':
     app = create_app("saved_file/meow.ggb") 
     @app.route('/')
     def index(initial_command = (r"M=(0,0)\nN=(0,1)\nK=(1,0)\nSegment(N,K)\nMidpoint(N,K)\nP=Midpoint(N,K)\nMidpoint(M,K)\nT=Midpoint(M,K)\nAngleBisector(M,N,K)\nIntersect(AngleBisector(M,N,K), Line(P,T))\nQ=Intersect(AngleBisector(M,N,K), Line(P,T))\nPolygon(M,N,K)")):    
-        return render_template('test.html', initial_command=initial_command)
+        return render_template('main.html', initial_command=initial_command)
     webbrowser.open("http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
     

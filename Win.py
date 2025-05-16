@@ -4,7 +4,7 @@ import sys
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.constants import *
-from tkinter import messagebox
+from tkinter import messagebox, TclError
 import os.path
 import subprocess
 import datetime
@@ -14,6 +14,10 @@ import pyserver
 import webbrowser
 from flask import render_template
 import threading
+from PIL import Image, ImageTk,  ImageGrab
+import base64
+import io
+
 
 _location = os.path.dirname(__file__)
 _bgcolor = '#d9d9d9'
@@ -54,23 +58,13 @@ def message_to_chat_gpt(input_text, thread):
     formatted_string = r"\n".join(lines)
     return formatted_string
 
-def open_current_file(current_time):
-    filepath = os.path.join("saved_file", f"GeoGebra_file_{current_time}.ggb")
-    print(filepath)
-    if os.path.exists(filepath):
-        try:
-            subprocess.Popen(['explorer', '/select,', filepath])
-        except Exception as e:
-            print(f"Произошла ошибка при открытии файла: {e}")  
-    else:
-        messagebox.showerror("Ошибка", "Файл еще не создан!")
 
 def server(initial_command = r"MEOW = (0,0)"):
     webbrowser.open(url)
     app = pyserver.create_app(f"saved_file/GeoGebra_file_{current_time}.ggb")
     @app.route('/')
     def index(initial_command = initial_command):    
-        return render_template('test.html', initial_command=initial_command) 
+        return render_template('main.html', initial_command=initial_command) 
     app.run(debug=False, use_reloader=False, port=5000)
     
 
@@ -78,11 +72,11 @@ def server(initial_command = r"MEOW = (0,0)"):
 
 
 class Toplevel1:
+    global current_time 
     def __init__(self, top=None):
         
-        global current_time 
-        global thread
         
+        global thread
         _style_code()
         try:
             thread = chatgpt.user_get_thread()
@@ -90,27 +84,25 @@ class Toplevel1:
         except openai.PermissionDeniedError as e:
             thread = "error"
             messagebox.showerror("Ошибка", "Включите прокси/впн с доступом к чатгпт!")
-        now = datetime.datetime.now()
-        current_time = now.strftime("%Y%m%d_%H%M%S")
         top.geometry("740x920+690+212")
         top.resizable(0,  0)
-        top.title(f"GeoGebra generator       {datetime.datetime.now()}")
-
+        top.title(f"GeoGebra generator")
         self.top = top
-
         self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
         top.configure(menu = self.menubar)
         self.menubar.add_command(compound='left', label='Справка', command = lambda:(subprocess.Popen(["notepad.exe", "readme.md"])))
         self.menubar.add_command(compound='left', label='Перезагрузить', command = lambda:(messagebox.showerror("Ошибка", "Декоративная кнопка")))
         self.sub_menu = tk.Menu(self.menubar, borderwidth=1, foreground='#000000',tearoff=0)
         self.menubar.add_cascade(compound='left', label='Файлы',menu=self.sub_menu, )
-        self.sub_menu.add_command(compound='left', label='Текущий файл', command = lambda:(open_current_file(current_time)))
+        self.sub_menu.add_command(compound='left', label='Текущий файл', command = lambda:(self.open_current_file(current_time)))
         self.sub_menu.add_command(compound='left', label='Папка с файлами', command = lambda:subprocess.Popen(['explorer', "saved_file"]))
         self.sub_menu.add_command(compound='left', label='Очистить кеш')
 
         
         self.Text1 = tk.Text(self.top)
         self.Text1.place(relx=0.027, rely=0.011, relheight=0.196, relwidth=0.946)
+        self.Text1.bind("<<Paste>>", self.paste_text)
+        self.Text1.insert(tk.END, "Поле для вставки текста. Поддерживает рассшифровку текста с картинки\n")
 
         self.Text2 = tk.Text(self.top)
         self.Text2.place(relx=0.027, rely=0.261, relheight=0.734, relwidth=0.946)
@@ -126,29 +118,91 @@ class Toplevel1:
         self.Button1.configure(command = lambda: (self.Text1.delete("1.0", tk.END)))
         self.Button1.configure(takefocus=0)
         self.Button1.configure(text='''Сбросить''')
-
-        def auxiliary_function():
-            self.Text2.insert(tk.END, "Ваш запрос отправлен, это может занять около 10 секунд\n")
+        
+        self.Button2 = ttk.Button(self.top)
+        self.Button2.place(relx=0.5, rely=0.21, height=40, width=350)
+        self.Button2.configure(command = lambda:( self.Text2.insert(tk.END, "Ваш запрос зарегистрирован, это может занять около 10 секунд\n"), self.auxiliary_function()))
+        self.Button2.configure(takefocus=0)
+        self.Button2.configure(text='''Отправить''')
+    def auxiliary_function(self):
+            global current_time
+            current_time = self.get_current_time()
             command_to_server = "MEOW = (0, 0)"
             command_to_server = message_to_chat_gpt(self.Text1.get("1.0", tk.END), thread)
             self.Text2.insert(tk.END, "Запрос к ChatGPT успешно отправлен\n")
             print(command_to_server)
             threading.Thread(target=server, args=(command_to_server,), daemon=True).start()
             self.Text2.insert(tk.END, "Файл сгенерирован!\n")
-            
-            
-        self.Button2 = ttk.Button(self.top)
-        self.Button2.place(relx=0.5, rely=0.21, height=40, width=350)
-        self.Button2.configure(command = lambda:(auxiliary_function()))
-        self.Button2.configure(takefocus=0)
-        self.Button2.configure(text='''Отправить''')
+    def paste_text(self, event=None): 
+        print(1)
+        try:
+            try:
+                text = self.top.clipboard_get()
+                try:
+                    text = text.encode('utf-8').decode('utf-8')
+                except UnicodeEncodeError:
+                    try:
+                        text = text.encode('latin-1').decode('utf-8')  
+                    except UnicodeEncodeError:
+                        try:
+                            text = text.encode('cp1251').decode('utf-8') 
+                        except:
+                            print("Не удалось декодировать текст из буфера обмена.")
+                            messagebox.showerror("Ошибка", "Не удалось декодировать текст.")
+                            return "break"
+
+                self.Text1.insert(tk.INSERT, text)
+                return "break"  
+
+            except TclError:
+                self.Text2.insert(tk.END, "Обработка вставленного изображения, это может занять несколько секунд\n")
+                try:
+                    img = ImageGrab.grabclipboard()
+                    if img:
+                        buffered = io.BytesIO()
+                        format = "PNG" 
+                        img.save(buffered, format=format)
+                        img_str = base64.b64encode(buffered.getvalue()).decode()
+                        self.Text1.insert(tk.END, f"{chatgpt.image_to_text(img_str)}\n")
+                        self.Text2.insert(tk.END, "Текст рассшифрован\n")
+                        return "break"
+                    else:
+                        print("В буфере обмена нет ни текста, ни изображения.")
+                        messagebox.showinfo("Информация", "В буфере обмена нет ни текста, ни изображения.")
+                        return "break"
+
+                except Exception as e:
+                    print(f"Ошибка при работе с изображением: {e}")
+                    messagebox.showerror("Ошибка", f"Ошибка при работе с изображением: {e}")
+                    return "break"
+        
+        except Exception as e:
+            print(f"Неизвестная ошибка: {e}")
+            messagebox.showerror("Ошибка", f"Неизвестная ошибка: {e}")
+            return "break"
+
+    
+    def get_current_time(self):
+        now = datetime.datetime.now()
+        current_time = now.strftime("%Y%m%d_%H%M%S")
+        return current_time
+    def open_current_file(self, current_time):
+        filepath = os.path.join("saved_file", f"GeoGebra_file_{current_time}.ggb")
+        print(filepath)
+        if os.path.exists(filepath):
+            try:
+                subprocess.Popen(['explorer', '/select,', filepath])
+            except Exception as e:
+                print(f"Произошла ошибка при открытии файла: {e}")  
+        else:
+            messagebox.showerror("Ошибка", "Файл еще не создан!")
 
 
 def start_up():
     Win_support.main()
 
 if __name__ == '__main__':
-    Win_support.main()
+    start_up()
 
 
 

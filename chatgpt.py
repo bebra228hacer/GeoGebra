@@ -2,6 +2,10 @@ import openai
 import json
 import openai
 import time
+import base64
+
+
+
 with open("config.json", "r+", encoding = "utf-8") as config_open:
     CONFIG_JSON = json.load(config_open)
 openai.api_key = CONFIG_JSON["CHATGPT_TOKEN"]
@@ -16,7 +20,7 @@ def new_assist1():
     assistant = openai.beta.assistants.create(
     name="GRAPH2D_ASSIST3.0_MATHBOT",
     instructions="""
-r**ИНСТРУКЦИЯ:**
+**ИНСТРУКЦИЯ:**
 
 Вы - автоматизированный инструмент для геометрических построений в GeoGebra. Ваша задача воспроизвести требуемый чертеж в GeoGebra
 
@@ -44,7 +48,6 @@ r**ИНСТРУКЦИЯ:**
         ```
 4.  **Обязательное построение многоугольников:** Если в условии задачи указан многоугольник (параллелограмм, треугольник, и т.п.), обязательно постройте его, соединив точки с помощью функции `Polygon(<Point>, <Point>, <Point>, ...)` (аргументы – координаты точек многоугольника в порядке обхода).
 5.  **Проверка существования переменных:** Перед использованием убедитесь, что каждая переменная, указанная в инструкции, была предварительно определена.
-
 **ОПРЕДЕЛЕНИЯ ОБЪЕКТОВ (СИНТАКСИС GEO GEBRA):**
 
 *   **Точка:** `(X,Y)` (где X и Y – числовые координаты) 
@@ -55,10 +58,13 @@ r**ИНСТРУКЦИЯ:**
 *   **Луч:** `Ray(<Point>, <Point>)` (луч, начинающийся в первой точке и проходящий через вторую точку)
 *   **Многоугольник:** `Polygon(<Point>, <Point>, <Point>, ...)` (многоугольник, образованный указанными точками; порядок точек важен)
 *   **Угол:**
+    Показывает угол для пользователя, если он уже существует, просто определи его с помощью этой функции.
     *   `Angle( <Point>, <Point>, <Point>)` (угол между лучами, исходящими из второй точки и проходящими через первую и третью точки)
     *   `Angle( <Line>, <Line> )` (угол между двумя прямыми)
+
 *   **Биссектриса угла:** `AngleBisector(<Point>, <Point>, <Point>)` (биссектриса угла, аналогично функции Angle(<Point>, <Point>, <Point>))
 *   **Отрезок:** `Segment(<Point>, <Point>)` (отрезок между двумя точками)
+*   **Вектор** `Vector(A,B)` (Вектор между двумя точками из начала в конец)
 *   **Окружность:**
     *   `Circle(<Point>, <Point>)` (окружность с центром в первой точке, проходящая через вторую точку)
     *   `Circle( <Point>, <Radius Number >)` (окружность с центром в точке и заданным радиусом)
@@ -74,7 +80,7 @@ r**ИНСТРУКЦИЯ:**
 
 **ВЫВОД СТРОГО ЕДИНСТВЕННАЯ СТРОКА ВИДА:** A=(0,0)\nB=(1,1)\ncircle=Circle(A,B)
 """,
-    model="gpt-4o-2024-08-06"
+    model="o3"
 )
     return assistant
 
@@ -112,7 +118,8 @@ def new_assist2():
         ```
 4.  **Обязательное построение многоугольников:** Если в условии задачи указан многоугольник (параллелограмм, треугольник, и т.п.), обязательно постройте его, соединив точки с помощью функции `Polygon(<Point>, <Point>, <Point>, ...)` (аргументы – координаты точек многоугольника в порядке обхода).
 5.  **Проверка существования переменных:** Перед использованием убедитесь, что каждая переменная, указанная в инструкции, была предварительно определена.
-
+6. Необязательно просчитывать длинны всех точек и сторон. Например если указаны все основания трапеции, то можно просто провести отрезок между их концами, без рассчета боковых граней
+7. Обязательно  указывай угол который нужно пометить через Angle( <Point>, <Point>, <Point>), если он дан  в условии или необходим при решении. не надо уазывать ненужные углы
 **ОПРЕДЕЛЕНИЯ ОБЪЕКТОВ (СИНТАКСИС GEO GEBRA):**
 
 *   **Точка:** `(X,Y)` (где X и Y – числовые координаты)
@@ -127,7 +134,9 @@ def new_assist2():
     *   `Angle( <Line>, <Line> )` (угол между двумя прямыми)
 *   **Биссектриса угла:** `AngleBisector(<Point>, <Point>, <Point>)` (биссектриса угла, аналогично функции Angle(<Point>, <Point>, <Point>))
 *   **Отрезок:** `Segment(<Point>, <Point>)` (отрезок между двумя точками)
-*   **Окружность:**
+*   **Вектор** `Vector(A,B)` (Вектор между двумя точками из начала в конец)
+
+**Окружность:**
     *   `Circle(<Point>, <Point>)` (окружность с центром в первой точке, проходящая через вторую точку)
     *   `Circle( <Point>, <Radius Number >)` (окружность с центром в точке и заданным радиусом)
     *   `Circle(<Point>, <Point>, <Point>)` (окружность, проходящая через три точки)
@@ -142,7 +151,7 @@ def new_assist2():
 
 **ВВОД:** (Здесь будет размещен сам запрос на построение)
     """,
-    model="gpt-4o-2024-08-06"
+    model="gpt-4o"
 )
     return assistant
 
@@ -210,6 +219,37 @@ def new_assist3():
 )
     return assistant
 
+def new_assist4():
+    assistant = openai.beta.assistants.create(
+    name="TEST_V100501",
+    instructions=r"""
+Пользуясь Geogebra code создай задачу. Разделяй каждую строчку n. например: "MEOW = (1,1)\nCAT=(2,2)"
+    """,
+    model="o3-mini"
+)
+    return assistant
+
+
+
+
+
+def image_to_text(base64_image):
+    response = openai.responses.create(
+        model="gpt-4.1-mini",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    { "type": "input_text", "text": """Напиши только текст того что на картинке, не забудь использовать ∠ и °, если они необходимы. Если над буквой видишь стрелочку, то это вектор, напиши это в виде "вектор b", не дублируй слово вектор """},
+                    {
+                        "type": "input_image",
+                        "image_url": f"data:image/jpeg;base64,{base64_image}",
+                    },
+                ],
+            }
+        ],
+    )
+    return response.output_text
 
 def chat_gpt_req(thread, text: str, assist_id="1"):
     assist_id = assist_id
@@ -246,13 +286,20 @@ def chat_gpt_req(thread, text: str, assist_id="1"):
             if last_message.role == "assistant": 
                 for content_item in last_message.content:
                     if content_item.type == "text":
+                        
                         return content_item.text.value
     except Exception as e: 
         print(f"Ошибка при получении сообщения: {e}")
         return None
 
+def simple_req(text):
+    response = openai.responses.create(
+        model="o3-mini",
+        input=text
+    )
+
+    print(response)
 
 
 if __name__ == "__main__":
-    print(new_assist1())
-    #asst_fKzfbQq8vhR8Zkp7SSntholK
+    print(new_assist2())
