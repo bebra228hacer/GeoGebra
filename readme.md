@@ -19,10 +19,11 @@
     "MATH_ASSIST": ""
 }
 
-Для заполнения GRAPH2D_ASSIST и MATH_ASSIST воспользуйтесь
+Для заполнения GRAPH2D_ASSIST и MATH_ASSIST воспользуйтесь chatgpt.py с заполненным CHATGPT_TOKEN
 
 
 Для сборки из кода
 pyinstaller --noconsole --icon=icon.ico --add-data "templates;templates" Win.py
+
 
 
