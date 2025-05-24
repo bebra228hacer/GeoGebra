@@ -29,7 +29,7 @@
       "language":"ru",
       "borderColor":null,
       "appletOnLoad": function(api) {
-        api.evalCommand("{{ initial_command }}"); 
+        {{ initial_command | safe }}
         api.setGridVisible(false);
         api.setAxesVisible(false);
         sendJSONToServer();
