@@ -19,6 +19,7 @@ def main(*args):
     global root
     root = tk.Tk()
     root.protocol( 'WM_DELETE_WINDOW' , root.destroy)
+    root.iconbitmap("icon.ico")
     # Creates a toplevel widget.
     global _top1, _w1
     _top1 = root

@@ -32,15 +32,14 @@ def create_app(file_path):
             return jsonify({'status': 'success', 'message': "all right"})
         except Exception as e:
             return jsonify({'status': 'error', 'message': f"Error creating zip: {str(e)}"})
-
-
     return app
 
 
 if __name__ == '__main__':
     app = create_app("saved_file/meow.ggb") 
     @app.route('/')
-    def index(initial_command = (r"M=(0,0)\nN=(0,1)\nK=(1,0)\nSegment(N,K)\nMidpoint(N,K)\nP=Midpoint(N,K)\nMidpoint(M,K)\nT=Midpoint(M,K)\nAngleBisector(M,N,K)\nIntersect(AngleBisector(M,N,K), Line(P,T))\nQ=Intersect(AngleBisector(M,N,K), Line(P,T))\nPolygon(M,N,K)")):    
+    def index():    
+        initial_command = r'api.evalCommand("M=(2,0)\nE=(1,3)\nO=(0,0)\na = Angle(M,E,O)");'
         return render_template('main.html', initial_command=initial_command)
     webbrowser.open("http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
